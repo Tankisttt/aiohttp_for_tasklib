@@ -1,5 +1,5 @@
-from datetime import datetime
 from tasklib import TaskWarrior, Task
+from tasklib.task import TaskQuerySet
 
 
 class TaskService:
@@ -7,18 +7,40 @@ class TaskService:
     def __init__(self):
         self.tw = TaskWarrior(data_location='~/.task', create=True)
 
-    def get_task_by_id(self, id: int):
-        return self.tw.tasks.get(id=id)
+    def get_task_by_id(self, id : int) -> Task | None:
+        try:
+            return self.tw.tasks.get(id=id)
+        finally:
+            return None
 
-    def get_task(self):
+    def get_task_by_uuid(self, uuid : str) -> Task | None:
+        try:
+            return self.tw.tasks.get(uuid=uuid)
+        finally:
+            return None
+
+    def get_tasks_by_filter(self, **args) -> TaskQuerySet | None:
+        try:
+            return self.tw.tasks.filter(due=args['due'])
+        finally:
+            return None
+
+    def get_all_tasks(self) -> TaskQuerySet | None:
+        try:
+            return self.tw.tasks.all()
+        finally:
+            return None
+
+
+    def sync_standard(self) -> None:
+        self.tw.execute_command(['sync'])
+
+    def sync_custom(self) -> None:
+        """делаем эндпоинт для синхронизации
+        (не та синхронизация что из коробки, а передаём просто периjд времени и список задач)
+        с указанием алгоритма/правила/стратегии синхронизации
+        (insert/delete missing/merge и т.п. на твоё усмотрение просто сделай несколько режимов)"""
         pass
-
-    def get_tasks_by_filter(self):
-        pass
-
-    def get_all_tasks(self):
-        tasks = self.tw.tasks.all()
-        return tasks
 
     def create_task(self, create_task_request) -> int:
         """Create Tasks. Returns id of created task"""
@@ -36,6 +58,6 @@ class TaskService:
         task_to_update['priority'] = update_task_request['priority']
         task_to_update.save()
 
-    def delete_task(self, uuid: int) -> None:
-        task_to_delete = self.tw.tasks.get(uuid=id)
+    def delete_task(self, id: int) -> None:
+        task_to_delete = self.tw.tasks.get(id=id)
         self.tw.delete_task(task_to_delete)
